@@ -43,7 +43,7 @@ Every skill except `setup-pstack` and `typescript-best-practices` is user-invoca
 | `~/.cursor/rules/pstack-models.mdc` (always-applied rule) | `~/.claude/pstack-models.md`, read at spawn time |
 | Model slugs (`grok-4.7-xhigh-fast`, `gpt-5.6-sol-max`, `claude-opus-5-5-max`) | `opus`, `sonnet`, `haiku`, `fable`, `<model>:<effort>` (for example `opus:max`), `inherit`, `agent:<subagent_type>`, `codex:<model>[:<effort>]`, `grok:<model>[:<effort>]`, or `openrouter:<model-id>` |
 | Reasoning-effort budgets | `max` / `balanced` / `lean` model-tier budgets, plus a fixed effort per role with `<model>:<effort>` |
-| A reasoning level and `-fast` slug picked per spawn | `pstack-role --effort <level>`, which runs a role's Claude seats on the `<agent>-<effort>` copies. Claude Code has no fast mode per subagent. |
+| A reasoning level and `-fast` slug picked per spawn | The Agent call's `effort` (Claude Code v2.1.292 or later), or `pstack-role --effort <level>` onto the `<agent>-<effort>` copies. pstack sets no fast mode per spawn. |
 | `~/.cursor/projects/<slug>/agent-transcripts/` | `~/.claude/projects/<slug>/<session-id>.jsonl` |
 | `subagent_type: "poteto-agent"`, `"Comment Sicko"` | `pstack:poteto-agent`, `pstack:comment-sicko` |
 | A Custom Mode, or the older `mode: true` with `reminder` | A `UserPromptSubmit` hook in `poteto-mode`'s frontmatter that repeats the reminder on every prompt after `/pstack:poteto-mode` |
@@ -64,7 +64,7 @@ Upstream runs `arena`, `architect`, and `interrogate` across Claude, GPT, and Gr
 | `grok:<model>[:<effort>]` | `pstack:grok-bridge` runs `grok` headless | Grok Build CLI logged in (`grok models` lists models), so it uses your SuperGrok plan | Every seat. Grok reads files and runs commands itself. |
 | `openrouter:<model-id>` | `pstack:openrouter-bridge` runs `bin/openrouter-ask` | `OPENROUTER_API_KEY` in the environment | Review, judge, and design seats. Text in, text out. |
 
-When `/pstack:setup-pstack` finds Codex or Grok, it recommends one seat per vendor. Upstream now defaults its panels to Claude and Grok:
+When `/pstack:setup-pstack` finds Codex or Grok, it recommends one seat per vendor:
 
 ```
 @gpt: codex:gpt-6-astra:high
@@ -75,7 +75,7 @@ architect runners: opus, @gpt, @grok
 interrogate reviewers: opus, @gpt, @grok
 ```
 
-Leave an alias empty (`@grok:`) to drop its seats. A failed or timed-out external seat reruns on the skill's default model, and the reply says so.
+Upstream itself now defaults its panels to Claude and Grok. Leave an alias empty (`@grok:`) to drop its seats. A failed or timed-out external seat reruns on the skill's default model, and the reply says so.
 
 ### How a bridge seat runs
 
@@ -89,7 +89,7 @@ The parent writes the whole prompt to a private file and spawns the bridge with 
 
 ### Claude effort per role
 
-A plain `opus` seat runs at your session's effort level. For a fixed level, write `<model>:<effort>`, for example `opus:max` for the review panels or `opus:high` for explorers.
+A plain `opus` seat runs at your session's effort level, unless poteto-mode's effort rule sets one for the job, starting a plain value at `xhigh`. For a fixed level, write `<model>:<effort>`, for example `opus:max` for the review panels or `opus:high` for explorers.
 
 ```
 interrogate reviewers: opus:max, @gpt, @grok
@@ -97,7 +97,7 @@ hardest tasks: opus:max
 how explorer: opus:high
 ```
 
-Claude Code's Agent tool has no effort parameter, and a subagent takes its effort from the `effort` frontmatter of its definition. So pstack ships its two seat agents at each effort level:
+Before Claude Code v2.1.292 the Agent tool had no effort parameter, and a subagent took its effort from the `effort` frontmatter of its definition. So pstack ships its two seat agents at each effort level, which works on every version:
 
 - `pstack:reviewer-<effort>`, a read-only review seat;
 - `pstack:poteto-agent-<effort>`, a code delegate in poteto's style.
@@ -144,7 +144,7 @@ Relative to mix64's port at `cbb2b75`, plus its update to upstream 0.15.9 (`f51e
 - **Claude Code conformance.**
   - **poteto-mode stays on.** A `UserPromptSubmit` hook in its frontmatter repeats upstream's `reminder` on every prompt, as Cursor's `mode: true` did. Its routing sections now come first, because after compaction Claude Code keeps only the first 5,000 tokens of an invoked skill.
   - **Cursor runtime terms mapped.** `references/claude-code.md` holds the map. The agent store is `${CLAUDE_PLUGIN_DATA}/store`. Audit ticks run on the `loop` skill. Swarm, orchestrate, and the autopilots stay under Claude Code's cap of 20 running subagents. A todo list falls back to a file on models without todo tools.
-  - **Effort picked per job.** Upstream picks each subagent's reasoning level and speed before the spawn. Here `pstack-role --effort <level>` runs a role's Claude seats at that level on the shipped `<agent>-<effort>` copies and keeps their models. External seats keep their configured effort, and nothing sets fast mode per subagent, since Claude Code has none.
+  - **Effort picked per job.** Upstream picks each subagent's reasoning level and speed before the spawn. Here each spawn passes the level as the Agent call's `effort` on Claude Code v2.1.292 or later, or through `pstack-role --effort <level>` onto the shipped `<agent>-<effort>` copies before that. Both keep the role's models. External seats keep their configured effort, and pstack sets no fast mode per spawn.
   - **Help and catch-up skills mapped.** `poteto-help` gives Claude Code's install commands, `/pstack:` commands, and this repository's links, and points at upstream's guide as Cursor material. `ketchup`'s `/visualize` maps to the session's picture tools, or a Mermaid block and file links in a terminal.
   - **Transcripts found the Claude Code way.** poteto-mode names the session ID and transcript. `reflect` matches the first `user` line, and its reviewers look for `Bash` calls, not Cursor's `Shell`.
   - **External seats stop in time.** `pstack-seat` stops the CLI 30 seconds before the Bash timeout. Before, Claude Code moved the timed-out command to the background, the bridge reported `FAILED`, and the CLI kept running on your subscription. The bridges also cap their turns and skip CLAUDE.md.

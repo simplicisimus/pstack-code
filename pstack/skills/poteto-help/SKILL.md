@@ -1,6 +1,7 @@
 ---
 name: poteto-help
 description: Guides users through pstack setup, /pstack:poteto-mode, and picking the skill, playbook, or principle for a task. Type /pstack:poteto-help with a question.
+argument-hint: "[question]"
 disable-model-invocation: true
 ---
 
@@ -14,7 +15,7 @@ This file maps questions to the skills and guide pages that hold the answers. Th
 
 ## Find out what they need
 
-Infer the need from the message and the conversation. A named situation, such as "which skill reviews a PR?", goes straight to its section. If the need is still unclear, ask one multiple-choice question with these options, then answer only the section they pick:
+Infer the need from the message and the conversation. A named situation, such as "which skill reviews a PR?", goes straight to its section. If the need is still unclear, ask one AskUserQuestion with the first four options below, which leaves the fifth to its "Other" answer, then answer only the section they pick:
 
 - Get set up
 - Start a task with `/pstack:poteto-mode`
@@ -118,7 +119,7 @@ Playbooks are step lists inside `/pstack:poteto-mode`, not skills, so they have 
 
 Without `/pstack:poteto-mode`, a phrase such as "babysit this pr" is a plain request, and no playbook runs. The Playbooks section of [`poteto-mode`](../poteto-mode/SKILL.md) lists every playbook and when it applies. [Guide page 6](https://github.com/cursor/plugins/blob/main/pstack/docs/guide/06-verify-and-ship.md) covers opening, babysitting, and landing a PR.
 
-pstack has no planning skill. Claude Code's plan mode works alongside it. For work that spans phases or stacked PRs, asking `/pstack:poteto-mode` for a plan runs the [Multi-phase plan playbook](../poteto-mode/playbooks/multi-phase-plan.md), which writes the plan and doesn't implement it. For a design question, the Prototype playbook or `/pstack:architect` settles it in code first.
+pstack has no planning skill. Claude Code's plan mode holds edits until the user approves the plan, so leave it before the playbook below writes its plan file. For work that spans phases or stacked PRs, asking `/pstack:poteto-mode` for a plan runs the [Multi-phase plan playbook](../poteto-mode/playbooks/multi-phase-plan.md), which writes the plan and doesn't implement it. For a design question, the Prototype playbook or `/pstack:architect` settles it in code first.
 
 Principles are one-rule skills that `/pstack:poteto-mode` reads and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Typing `/pstack:principle-<name>` still loads one on demand. [Guide page 8](https://github.com/cursor/plugins/blob/main/pstack/docs/guide/08-principles.md) lists them.
 
@@ -126,7 +127,7 @@ Principles are one-rule skills that `/pstack:poteto-mode` reads and cites in its
 
 | Symptom | Fix |
 |---|---|
-| The mode stopped applying after a few turns | Context compaction dropped most of its SKILL.md. Its hook tells the agent to re-read the file, so say "re-read poteto-mode" if it did not. |
+| The mode stopped applying after a few turns | Context compaction trimmed or dropped its SKILL.md. Its hook tells the agent to re-read the file, so say "re-read poteto-mode" if it did not. |
 | A question got treated as the next step of the last task | Say "new task", or say the turn doesn't need the mode. |
 | A new model choice had no effect | Check that `~/.claude/pstack-models.md` has the role's line, and run `pstack-role --seat review '<role>'` to see what it resolves to. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |

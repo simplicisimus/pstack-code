@@ -11,7 +11,7 @@ Investigate the motivation and intent behind code. The companion `how` skill ans
 
 Each spawn below names a role line in `~/.claude/pstack-models.md` (written by `/setup-pstack`) and a default. Resolve it with `pstack-role --seat review --default <default> '<role line>'`. It applies the value grammar in the **setup-pstack** skill, falls back to the default when the file or the line is missing, and prints the `subagent_type` and `model` to use, which are the ones listed below for a plain Claude model, or the brief of a bridge seat. If a spawn fails or a bridge replies `FAILED`, rerun it on the default and say so. Pick each subagent's effort for the job, per the Subagents section of the **poteto-mode** skill.
 
-Every spawn is `pstack:reviewer`, the read-only seat. It keeps the MCP access that the investigators and the synthesizer's citation spot-checks need, and it has no edit tools. Don't use `Explore`. A `codex:`, `grok:`, or `openrouter:` investigator has no access to Claude Code's MCP servers, so use one only for the source-control category.
+Every spawn is `pstack:reviewer`, the read-only seat, or its `-<level>` copy when the effort rule needs one. It keeps the MCP access that the investigators and the synthesizer's citation spot-checks need, and it has no edit tools. Don't use `Explore`. A `codex:`, `grok:`, or `openrouter:` investigator has no access to Claude Code's MCP servers, so use one only for the source-control category.
 
 ## Operating Posture
 
