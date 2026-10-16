@@ -28,7 +28,7 @@ expect() {
 }
 nl=$'\n'
 
-r=pstack:reviewer
+r=pstack-code:reviewer
 expect allow $r 'git diff main...HEAD'
 expect allow $r 'git log --oneline -5 | head -3'
 expect allow $r 'git status --short 2>&1'
@@ -131,11 +131,11 @@ expect deny $r "grep foo <<< \"\$x\"${nl}rm -rf src"
 expect deny $r "cat <<EOF > /tmp/x${nl}hello${nl}EOF${nl}echo done > out.txt"
 expect deny $r 'rm -rf build' Monitor
 
-expect deny pstack:reviewer-low 'git commit -m wip'
-expect deny pstack:reviewer-max 'rm -rf build' Monitor
-expect allow pstack:poteto-agent-max 'git commit -m wip'
+expect deny pstack-code:reviewer-low 'git commit -m wip'
+expect deny pstack-code:reviewer-max 'rm -rf build' Monitor
+expect allow pstack-code:poteto-agent-max 'git commit -m wip'
 expect allow pstack-opus-max-review 'git commit -m wip'
-expect allow pstack:codex-bridge 'pstack-seat --mode review --prompt /tmp/p.md'
+expect allow pstack-code:codex-bridge 'pstack-seat --mode review --prompt /tmp/p.md'
 expect allow general-purpose 'rm -rf build'
 expect allow "" 'rm -rf build'
 

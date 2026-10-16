@@ -25,7 +25,7 @@ Open a todolist with one entry per phase before launching anything.
 
 ## Phase B: Fan out
 
-Spawn the workers in one message with `run_in_background: true` and the step 4 resolution, as many as the session has free subagent slots. Claude Code refuses a spawn while 20 subagents are running and says not to retry, so queue the rest and start one each time a worker finishes. Workers that write add `isolation: "worktree"`, and a `codex:` or `grok:` writer gets `Mode: write`. Read-only workers are review seats: `pstack:reviewer` for a Claude model, `Mode: review` for a bridge, and no `isolation`. Use `isolation: "remote"` only when the user wants the work off this machine and remote agents are available.
+Spawn the workers in one message with `run_in_background: true` and the step 4 resolution, as many as the session has free subagent slots. Claude Code refuses a spawn while 20 subagents are running and says not to retry, so queue the rest and start one each time a worker finishes. Workers that write add `isolation: "worktree"`, and a `codex:` or `grok:` writer gets `Mode: write`. Read-only workers are review seats: `pstack-code:reviewer` for a Claude model, `Mode: review` for a bridge, and no `isolation`. Use `isolation: "remote"` only when the user wants the work off this machine and remote agents are available.
 
 When a worker must start from a non-default pushed branch, name the branch in its brief and have it check that branch out inside its worktree before any work.
 

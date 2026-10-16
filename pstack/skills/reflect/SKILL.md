@@ -12,7 +12,7 @@ Invoke when the user says "reflect" or "/reflect". Skip when the conversation is
 
 ## 1. Locate the active transcript
 
-The parent finds its own transcript file before fanning out. Its transcript is `~/.claude/projects/<slug>/<session-id>.jsonl`, where `<slug>` is the working directory's absolute path with every non-alphanumeric character replaced by `-` (so `C:\Users\you\proj` becomes `C--Users-you-proj`). The session ID is `${CLAUDE_SESSION_ID}` when you run this skill as `/pstack:reflect`. When poteto-mode, another pstack skill, or a brief sent you here, use the session ID it names. Use that directory. Do not glob across `~/.claude/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects.
+The parent finds its own transcript file before fanning out. Its transcript is `~/.claude/projects/<slug>/<session-id>.jsonl`, where `<slug>` is the working directory's absolute path with every non-alphanumeric character replaced by `-` (so `C:\Users\you\proj` becomes `C--Users-you-proj`). The session ID is `${CLAUDE_SESSION_ID}` when you run this skill as `/pstack-code:reflect`. When poteto-mode, another pstack skill, or a brief sent you here, use the session ID it names. Use that directory. Do not glob across `~/.claude/projects/*/`. That crosses workspace boundaries and reads private chats from unrelated projects.
 
 Without an ID, list the candidates in that one directory:
 
@@ -24,7 +24,7 @@ Claude Code keeps one `<session-id>.jsonl` per session and each subagent's trans
 
 ## 2. Spawn three reviewers in parallel
 
-One message, three `Agent` calls, `subagent_type: pstack:reviewer`, with `model` set as below. Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). `pstack:reviewer` keeps MCP access and has no edit tools. A `codex:`, `grok:`, or `openrouter:` reviewer receives the session transcript and has no MCP access, so use one only when the user is fine sending the transcript to that provider.
+One message, three `Agent` calls, `subagent_type: pstack-code:reviewer`, with `model` set as below. Reviewers need MCP access for context lookups (tickets, chat threads, observability traces referenced in the transcript). `pstack-code:reviewer` keeps MCP access and has no edit tools. A `codex:`, `grok:`, or `openrouter:` reviewer receives the session transcript and has no MCP access, so use one only when the user is fine sending the transcript to that provider.
 
 Each reviewer and the synthesizer name a role line in `~/.claude/pstack-models.md` (written by `/setup-pstack`) and a default. Resolve it with `pstack-role --seat review --default <default> '<role line>'`. It applies the value grammar in the **setup-pstack** skill, falls back to the default when the file or the line is missing, and prints the `subagent_type` and `model` to use, which are the ones listed below for a plain Claude model or their `-<level>` copies under `--effort`, or the brief of a bridge seat. If a spawn fails or a bridge replies `FAILED`, rerun it on the default and say so. Pick each subagent's effort for the job, per the Subagents section of the **poteto-mode** skill.
 
@@ -38,7 +38,7 @@ Pass each template verbatim, substituting the transcript path or digest where ma
 
 ## 3. Synthesize
 
-One `Agent` call, `subagent_type: pstack:reviewer`, `model` from the `reflect judgment, divergent, synthesizer` line (default `opus`). It spot-verifies citations through MCP, and `pstack:reviewer` keeps MCP access. Pass `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. It returns an Accepted / Rejected / Backlog list.
+One `Agent` call, `subagent_type: pstack-code:reviewer`, `model` from the `reflect judgment, divergent, synthesizer` line (default `opus`). It spot-verifies citations through MCP, and `pstack-code:reviewer` keeps MCP access. Pass `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. It returns an Accepted / Rejected / Backlog list.
 
 ## 4. Structural enforcement check
 

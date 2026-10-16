@@ -32,7 +32,7 @@ Launch all reviewers in a single message with the Agent tool, one per entry on t
 | Reviewer A | `opus` |
 | Reviewer B | `sonnet` |
 
-Each reviewer gets `subagent_type: "pstack:reviewer"`, the read-only seat, and `model` set to its configured entry, or its table default when there is no configured line.
+Each reviewer gets `subagent_type: "pstack-code:reviewer"`, the read-only seat, and `model` set to its configured entry, or its table default when there is no configured line.
 
 Resolve the line with `pstack-role --seat review --panel --default 'opus, sonnet' 'interrogate reviewers'`. It applies the value grammar in the **setup-pstack** skill and prints one line per reviewer with its `subagent_type`, its `model` when one applies, and the brief of a bridge seat. External reviewers get `Mode: review`, and the filled template below is their prompt file. If a configured entry fails to spawn or a bridge replies `FAILED`, run that reviewer on its table default and say so. A disabled alias drops its reviewer instead.
 

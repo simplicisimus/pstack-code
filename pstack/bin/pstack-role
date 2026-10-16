@@ -17,7 +17,7 @@
 # A configured value that cannot be used falls back to the default at the same position, with note= saying why.
 set -u
 
-seat="" defaults="" write_agent="pstack:poteto-agent" role="" panel=0 effort_level=""
+seat="" defaults="" write_agent="pstack-code:poteto-agent" role="" panel=0 effort_level=""
 config="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/pstack-models.md"
 
 usage() {
@@ -79,7 +79,7 @@ split_list() {
 
 plain_seat() {
 	if [ "$seat" = review ]; then
-		printf 'subagent_type=pstack:reviewer'
+		printf 'subagent_type=pstack-code:reviewer'
 	else
 		printf 'subagent_type=%s' "$write_agent"
 	fi
@@ -90,7 +90,7 @@ plain_seat() {
 effort_seat() {
 	local agent=poteto-agent
 	[ "$seat" = review ] && agent=reviewer
-	echo "subagent_type=pstack:$agent-$2 model=$1"
+	echo "subagent_type=pstack-code:$agent-$2 model=$1"
 }
 
 resolve() {
@@ -115,12 +115,12 @@ resolve() {
 			echo "error=malformed-$cli-value"
 			return
 		fi
-		local line="subagent_type=pstack:$cli-bridge bridge=$cli brief_model=$model brief_effort=$effort brief_mode=$seat"
+		local line="subagent_type=pstack-code:$cli-bridge bridge=$cli brief_model=$model brief_effort=$effort brief_mode=$seat"
 		[ "$seat" = write ] && line="$line isolation=worktree"
 		echo "$line"
 		;;
 	openrouter:?*)
-		local line="subagent_type=pstack:openrouter-bridge bridge=openrouter brief_model=${v#openrouter:} brief_effort=default brief_mode=review"
+		local line="subagent_type=pstack-code:openrouter-bridge bridge=openrouter brief_model=${v#openrouter:} brief_effort=default brief_mode=review"
 		[ "$seat" = write ] && line="$line note=returns-a-patch-that-you-apply"
 		echo "$line"
 		;;
