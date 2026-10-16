@@ -24,7 +24,7 @@ Every role value is one of these. A panel role takes a comma-separated list, and
 
 ### Resolving a role
 
-`pstack-role` applies this grammar, so skills do not restate it. Run `pstack-role --seat review|write --default '<skill default>' '<role>'`. Add `--panel` for a panel role, whose seats all run, so a disabled alias drops its seat and is never refilled. Without `--panel`, a role whose entries are all disabled aliases falls back to the skill default. Add `--write-agent <type>` when the skill's write seats use an agent other than `pstack:poteto-agent`. It reads `~/.claude/pstack-models.md`, expands aliases, and prints one line per seat, such as `seat=2 value=@gpt=codex:gpt-6-astra:high subagent_type=pstack:codex-bridge bridge=codex brief_model=gpt-6-astra brief_effort=high brief_mode=review`.
+`pstack-role` applies this grammar, so skills do not restate it. Run `pstack-role --seat review|write --default '<skill default>' '<role>'`. Add `--panel` for a panel role, whose seats all run, so a disabled alias drops its seat and is never refilled. Without `--panel`, a role whose entries are all disabled aliases falls back to the skill default. Add `--write-agent <type>` when the skill's write seats use an agent other than `pstack:poteto-agent`. Add `--effort <level>` to run the role's Claude seats at the effort a job calls for, per the "Match the effort to the job" rule in the **poteto-mode** skill. It keeps each seat's model, and external seats keep the effort their value names. It reads `~/.claude/pstack-models.md`, expands aliases, and prints one line per seat, such as `seat=2 value=@gpt=codex:gpt-6-astra:high subagent_type=pstack:codex-bridge bridge=codex brief_model=gpt-6-astra brief_effort=high brief_mode=review`.
 
 - Spawn one Agent per line with its `subagent_type`, plus `model` and `isolation` when the line has them.
 - A line with `bridge=` is a bridge seat. Fill the bridge brief below from its `brief_*` fields.
@@ -92,7 +92,7 @@ The default mapping is the file shape in step 5. If `~/.claude/pstack-models.md`
 
 ### 3. Budget, map, and confirm
 
-**(a) Ask for a budget** with AskUserQuestion. Offer these labels and name the current budget when the file records one.
+**(a) Ask for a budget** with AskUserQuestion. Offer these labels and name the current budget when the file records one. With no file, say that `balanced` matches the skill defaults.
 
 - `max`: every `sonnet` role becomes `opus`.
 - `balanced`: the step 5 defaults.
@@ -143,12 +143,12 @@ why investigators: sonnet
 why synthesizer: opus
 reflect tooling: sonnet
 reflect judgment, divergent, synthesizer: opus
-arena runners: opus, opus, sonnet
+arena runners: opus, sonnet
 arena cross-judge pool: opus, sonnet
 swarm workers: sonnet
 mechanical edits: sonnet
-architect runners: opus, opus, sonnet
-interrogate reviewers: opus, opus, sonnet
+architect runners: opus, sonnet
+interrogate reviewers: opus, sonnet
 ```
 
 Write active aliases without the leading `# `.

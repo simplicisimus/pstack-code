@@ -17,6 +17,7 @@ The playbooks were written for Cursor. Each row maps a Cursor term to what Claud
 | `/loop` | The `loop` skill, which you can invoke yourself. `1h <tick prompt>` gives a fixed cadence, and no interval lets you pace it. It fires only while this session runs, and it expires 7 days after you arm it, so re-arm it for a longer program. A cloud session's VM is reclaimed after a period of inactivity, which ends the loop and any subagents still running. The **Monitor** tool or a background Bash command handles event waits. |
 | `control-ui` (browser, Electron, web) | The built-in browser tools (`mcp__Claude_Browser__*`), or Claude in Chrome when the user asks for it. The `run` skill launches the app. |
 | `control-cli` (CLIs, TUIs) | Bash, and the `run` skill for launching. |
+| `/visualize`, a screenshot or video embedded in a reply | The session's own tools for showing a picture, when it has them, such as the desktop app's widget and file-sending tools. Otherwise a Mermaid code block for a diagram and a path or link for each screenshot or video, since a terminal shows neither inline. |
 | `/deslop` from `cursor-team-kit` | The `deslop` skill when installed (copy `cursor-team-kit/skills/deslop/SKILL.md` to `~/.claude/skills/deslop/`). Otherwise the built-in `simplify` skill over the diff. |
 | `create-skill` (Cursor built-in) | The `skill-creator` skill when available. Otherwise the **Authoring a skill** playbook alone. |
 | Bugbot | Whatever PR reviewers the repo has. |
