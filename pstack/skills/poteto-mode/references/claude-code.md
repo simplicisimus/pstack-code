@@ -6,7 +6,7 @@ The playbooks were written for Cursor. Each row maps a Cursor term to what Claud
 |---|---|
 | `Task` subagent, `subagent_type: general-purpose` | Agent tool, same `subagent_type`. |
 | cloud agent, `environment: "cloud"` | Agent with `isolation: "worktree"` and `run_in_background: true`. Use `isolation: "remote"` only when the user wants the work off this machine and remote agents are available. |
-| readonly / Ask mode | `subagent_type: "pstack:reviewer"`, which has no edit tools but keeps Bash and MCP. `Explore` for pure search. |
+| readonly / Ask mode | `subagent_type: "pstack-code:reviewer"`, which has no edit tools but keeps Bash and MCP. `Explore` for pure search. |
 | Resume an agent | `SendMessage` to its agent ID or name. A message to an agent that has finished resumes it, so never send one just to check on it. |
 | Stand down or stop an agent | `TaskStop` with its agent ID, name, or task ID. |
 | Cursor dashboard, agent status | Background task notifications, each agent's output, and `/tasks`. Never poll with `sleep`. |

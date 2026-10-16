@@ -1,12 +1,12 @@
 ---
-description: /pstack:how answers through read-only pstack reviewer seats.
+description: /pstack-code:how answers through read-only pstack reviewer seats.
 max_turns: 30
 timeout_seconds: 600
 runs: 1
 allowed_tools: [Read, Glob, Grep, Agent, Skill]
 ---
 
-/pstack:how how does this retry loop decide when to stop? The code is below, not in a file.
+/pstack-code:how how does this retry loop decide when to stop? The code is below, not in a file.
 
 ```ts
 export interface RetryOptions {

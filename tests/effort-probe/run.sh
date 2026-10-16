@@ -27,8 +27,8 @@ prompt="This is an automated test of subagent settings. In ONE message, make exa
 3. description 'arm plugin-none', subagent_type 'effort-probe:probe-none', no model parameter
 4. description 'arm plugin-low-opus', subagent_type 'effort-probe:probe-low', model 'opus'
 5. description 'arm session-low', subagent_type 'probe-session-low', no model parameter
-6. description 'arm pstack reviewer-low', subagent_type 'pstack:reviewer-low', model 'sonnet'
-7. description 'arm pstack poteto-agent-high', subagent_type 'pstack:poteto-agent-high', model 'sonnet'
+6. description 'arm pstack reviewer-low', subagent_type 'pstack-code:reviewer-low', model 'sonnet'
+7. description 'arm pstack poteto-agent-high', subagent_type 'pstack-code:poteto-agent-high', model 'sonnet'
 After all seven return, reply with just DONE. Use no other tool."
 
 claude -p --plugin-dir "$here/plugin" --plugin-dir "$pstack" --agents "$session_agents" --model sonnet --effort medium \

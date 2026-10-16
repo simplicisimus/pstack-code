@@ -63,7 +63,7 @@ async function ask({ model, promptFile, maxTokens }) {
     headers: {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
-      "X-Title": "pstack-claude-code",
+      "X-Title": "pstack-code",
     },
     body: JSON.stringify({
       model,

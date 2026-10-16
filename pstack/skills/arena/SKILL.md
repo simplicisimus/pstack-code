@@ -26,7 +26,7 @@ If a candidate produces no output, proceed with N-1 and note the dropout.
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, choose one model from the `arena cross-judge pool` line in `~/.claude/pstack-models.md`. If the rule or that line is missing, choose from `opus`, `sonnet`. Prefer an entry that differs from the parent's model. A `codex:`, `grok:`, or `openrouter:` entry (or an `agent:` backed by a non-Claude model) is the strongest choice when the pool has one. With a Claude-only pool, the judge's fresh context is the main source of independence. Spawn one judge on that model as a review seat: `pstack:reviewer` for a Claude model, `Mode: review` for a bridge. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with your reading in Phase D. Don't spawn it while candidates are still writing.
+After all Phase B candidates complete, choose one model from the `arena cross-judge pool` line in `~/.claude/pstack-models.md`. If the rule or that line is missing, choose from `opus`, `sonnet`. Prefer an entry that differs from the parent's model. A `codex:`, `grok:`, or `openrouter:` entry (or an `agent:` backed by a non-Claude model) is the strongest choice when the pool has one. With a Claude-only pool, the judge's fresh context is the main source of independence. Spawn one judge on that model as a review seat: `pstack-code:reviewer` for a Claude model, `Mode: review` for a bridge. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with your reading in Phase D. Don't spawn it while candidates are still writing.
 
 ## Phase D: Pick a base
 
