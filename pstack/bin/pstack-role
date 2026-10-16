@@ -2,10 +2,12 @@
 # Resolves one pstack role from pstack-models.md into Agent tool calls, one line per seat.
 # The value grammar is in the setup-pstack skill.
 #
-#   pstack-role --seat review|write [--panel] [--default "V1, V2"] [--write-agent TYPE] [--config FILE] ROLE
+#   pstack-role --seat review|write [--panel] [--default "V1, V2"] [--write-agent TYPE] [--effort LEVEL] [--config FILE] ROLE
 #
 # --panel marks a role whose seats all run, so a disabled alias drops its seat and is never refilled.
 # Without it, the role picks one value, and it falls back to the default when every entry is disabled.
+# --effort runs every Claude seat at LEVEL (low, medium, high, xhigh, or max) and keeps its model. Bridge, agent:,
+# and inherit seats keep what their value says.
 #
 # Each seat prints one line of key=value fields:
 #   seat=N value=V subagent_type=T [model=M] [isolation=worktree]
@@ -15,22 +17,23 @@
 # A configured value that cannot be used falls back to the default at the same position, with note= saying why.
 set -u
 
-seat="" defaults="" write_agent="pstack:poteto-agent" role="" panel=0
+seat="" defaults="" write_agent="pstack:poteto-agent" role="" panel=0 effort_level=""
 config="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/pstack-models.md"
 
 usage() {
-	echo "usage: pstack-role --seat review|write [--panel] [--default \"V1, V2\"] [--write-agent TYPE] [--config FILE] ROLE" >&2
+	echo "usage: pstack-role --seat review|write [--panel] [--default \"V1, V2\"] [--write-agent TYPE] [--effort LEVEL] [--config FILE] ROLE" >&2
 	exit 2
 }
 
 while [ $# -gt 0 ]; do
 	case "$1" in
-	--seat | --default | --write-agent | --config)
+	--seat | --default | --write-agent | --effort | --config)
 		[ $# -ge 2 ] || usage
 		case "$1" in
 		--seat) seat=$2 ;;
 		--default) defaults=$2 ;;
 		--write-agent) write_agent=$2 ;;
+		--effort) effort_level=$2 ;;
 		--config) config=$2 ;;
 		esac
 		shift 2
@@ -48,6 +51,7 @@ while [ $# -gt 0 ]; do
 	esac
 done
 case "$seat" in review | write) ;; *) usage ;; esac
+case "$effort_level" in "" | low | medium | high | xhigh | max) ;; *) usage ;; esac
 [ -n "$role" ] || usage
 
 lookup() {
@@ -83,10 +87,22 @@ plain_seat() {
 	echo
 }
 
+effort_seat() {
+	local agent=poteto-agent
+	[ "$seat" = review ] && agent=reviewer
+	echo "subagent_type=pstack:$agent-$2 model=$1"
+}
+
 resolve() {
 	local v=$1
 	case "$v" in
-	opus | sonnet | haiku | fable) plain_seat "$v" ;;
+	opus | sonnet | haiku | fable)
+		if [ -n "$effort_level" ]; then
+			effort_seat "$v" "$effort_level"
+		else
+			plain_seat "$v"
+		fi
+		;;
 	inherit) plain_seat "" ;;
 	agent:?*) echo "subagent_type=${v#agent:}" ;;
 	codex:?* | grok:?*)
@@ -112,9 +128,7 @@ resolve() {
 		local model=${v%%:*} effort=${v#*:}
 		case "$model" in opus | sonnet | haiku | fable) ;; *) echo "error=unknown-value" && return ;; esac
 		case "$effort" in low | medium | high | xhigh | max) ;; *) echo "error=unknown-effort" && return ;; esac
-		local agent=poteto-agent
-		[ "$seat" = review ] && agent=reviewer
-		echo "subagent_type=pstack:$agent-$effort model=$model"
+		effort_seat "$model" "${effort_level:-$effort}"
 		;;
 	*) echo "error=unknown-value" ;;
 	esac
@@ -153,7 +167,7 @@ if [ -z "$configured" ]; then
 	echo "pstack-role: no value for '$role' in $config and no --default" >&2
 	exit 1
 fi
-echo "# role=\"$role\" seat=$seat source=$source_label"
+echo "# role=\"$role\" seat=$seat source=$source_label${effort_level:+ effort=$effort_level}"
 
 entries=$(split_list "$configured")
 count=$(printf '%s\n' "$entries" | grep -c .)

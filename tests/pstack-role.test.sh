@@ -119,6 +119,33 @@ check "no config file still resolves the default" \
 "seat=1 value=haiku subagent_type=pstack:reviewer model=haiku" \
 "$("$bin" --config "$tmp/none.md" --seat review --default haiku "swarm workers" | grep -v '^#')"
 
+check "--effort sets every Claude seat in a panel and keeps the bridges as configured" \
+"seat=1 value=opus:max subagent_type=pstack:reviewer-high model=opus
+seat=2 value=@gpt=codex:gpt-6-astra:high subagent_type=pstack:codex-bridge bridge=codex brief_model=gpt-6-astra brief_effort=high brief_mode=review
+seat=3 value=@grok=grok:grok-4.7 subagent_type=pstack:grok-bridge bridge=grok brief_model=grok-4.7 brief_effort=default brief_mode=review
+seat=4 value=@free skip=alias-disabled" \
+"$(run --seat review --panel --effort high --default "opus, opus, sonnet" "interrogate reviewers")"
+
+check "--effort runs a plain write value as the poteto agent at that effort" \
+"seat=1 value=sonnet subagent_type=pstack:poteto-agent-medium model=sonnet" \
+"$(run --seat write --write-agent general-purpose --effort medium --default opus "feature, refactoring")"
+
+check "--effort applies to a fallback default" \
+"seat=1 value=opus subagent_type=pstack:reviewer-max model=opus note=fallback-for-opus:turbo-unknown-effort" \
+"$(run --seat review --effort max --default opus "why synthesizer")"
+
+check "--effort leaves inherit and agent: seats alone" \
+"seat=1 value=inherit subagent_type=pstack:poteto-agent
+seat=1 value=agent:my-investigator subagent_type=my-investigator" \
+"$(run --seat write --effort low --default sonnet "mechanical edits"; run --seat review --effort low --default sonnet "why investigators")"
+
+check "the header names the effort" \
+'# role="bug-fix" seat=write source=default effort=xhigh' \
+"$("$bin" --config "$tmp/pstack-models.md" --seat write --effort xhigh --default sonnet bug-fix | head -1)"
+
+"$bin" --config "$tmp/pstack-models.md" --seat review --effort turbo --default opus role >/dev/null 2>&1
+check "an unknown --effort is a usage error" "2" "$?"
+
 "$bin" --config "$tmp/pstack-models.md" --seat review "unknown role" >/dev/null 2>&1
 check "no line and no default is an error" "1" "$?"
 
