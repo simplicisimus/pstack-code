@@ -1,8 +1,8 @@
 # pstack for Claude Code
 
-A Claude Code port of [pstack](https://github.com/cursor/plugins/tree/main/pstack) v0.15.9 by [poteto](https://x.com/poteto) (Lauren Tan), MIT licensed. The upstream README explains the philosophy. This file covers what differs on Claude Code.
+A Claude Code port of [pstack](https://github.com/cursor/plugins/tree/main/pstack) v0.15.25 by [poteto](https://x.com/poteto) (Lauren Tan), MIT licensed. The upstream README explains the philosophy. This file covers what differs on Claude Code.
 
-This is a fork of [mix64/pstack-claude-code](https://github.com/mix64/pstack-claude-code). It adds Grok panel seats, rebuilds the external-model bridges, and fixes bugs in the port. See [Changes in this fork](#changes-in-this-fork).
+This is a fork of mix64's pstack-claude-code, whose repository is no longer public. It adds Grok panel seats, rebuilds the external-model bridges, and fixes bugs in the port. See [Changes in this fork](#changes-in-this-fork).
 
 ## Install
 
@@ -30,7 +30,7 @@ Then run `/pstack:setup-pstack` once to choose models per role. After updating f
 /pstack:interrogate review this pr.
 ```
 
-Every skill except `setup-pstack` and `typescript-best-practices` is user-invocable only (`disable-model-invocation: true`, as upstream). That keeps 47 skill descriptions out of every session's context. `typescript-best-practices` loads by itself when Claude works on `.ts` and `.tsx` files, through its `paths` field. `poteto-mode` reaches the other skills by reading `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md` directly.
+Every skill except `setup-pstack` and `typescript-best-practices` is user-invocable only (`disable-model-invocation: true`, as upstream). That keeps 51 skill descriptions out of every session's context. `typescript-best-practices` loads by itself when Claude works on `.ts` and `.tsx` files, through its `paths` field. `poteto-mode` reaches the other skills by reading `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md` directly.
 
 ## What changed from the Cursor version
 
@@ -43,9 +43,10 @@ Every skill except `setup-pstack` and `typescript-best-practices` is user-invoca
 | `~/.cursor/rules/pstack-models.mdc` (always-applied rule) | `~/.claude/pstack-models.md`, read at spawn time |
 | Model slugs (`grok-4.7-xhigh-fast`, `gpt-5.6-sol-max`, `claude-opus-5-5-max`) | `opus`, `sonnet`, `haiku`, `fable`, `<model>:<effort>` (for example `opus:max`), `inherit`, `agent:<subagent_type>`, `codex:<model>[:<effort>]`, `grok:<model>[:<effort>]`, or `openrouter:<model-id>` |
 | Reasoning-effort budgets | `max` / `balanced` / `lean` model-tier budgets, plus a fixed effort per role with `<model>:<effort>` |
+| A reasoning level and `-fast` slug picked per spawn | `pstack-role --effort <level>`, which runs a role's Claude seats on the `<agent>-<effort>` copies. Claude Code has no fast mode per subagent. |
 | `~/.cursor/projects/<slug>/agent-transcripts/` | `~/.claude/projects/<slug>/<session-id>.jsonl` |
 | `subagent_type: "poteto-agent"`, `"Comment Sicko"` | `pstack:poteto-agent`, `pstack:comment-sicko` |
-| `mode: true` sticky mode with `reminder` | A `UserPromptSubmit` hook in `poteto-mode`'s frontmatter that repeats the reminder on every prompt after `/pstack:poteto-mode` |
+| A Custom Mode, or the older `mode: true` with `reminder` | A `UserPromptSubmit` hook in `poteto-mode`'s frontmatter that repeats the reminder on every prompt after `/pstack:poteto-mode` |
 | The agent store, named in the system prompt | `${CLAUDE_PLUGIN_DATA}/store`, named in `poteto-mode` |
 | Todo list | `TaskCreate` and `TaskUpdate`, or `TodoWrite`, when the session has them, otherwise a file |
 | `cursor-team-kit` (`deslop`, `control-ui`, `control-cli`) | `deslop` copied into `~/.claude/skills/` (falls back to the built-in `simplify` skill), built-in browser tools, Bash, `run` skill |
@@ -63,7 +64,7 @@ Upstream runs `arena`, `architect`, and `interrogate` across Claude, GPT, and Gr
 | `grok:<model>[:<effort>]` | `pstack:grok-bridge` runs `grok` headless | Grok Build CLI logged in (`grok models` lists models), so it uses your SuperGrok plan | Every seat. Grok reads files and runs commands itself. |
 | `openrouter:<model-id>` | `pstack:openrouter-bridge` runs `bin/openrouter-ask` | `OPENROUTER_API_KEY` in the environment | Review, judge, and design seats. Text in, text out. |
 
-When `/pstack:setup-pstack` finds Codex or Grok, it recommends one seat per vendor, as upstream does:
+When `/pstack:setup-pstack` finds Codex or Grok, it recommends one seat per vendor. Upstream now defaults its panels to Claude and Grok:
 
 ```
 @gpt: codex:gpt-6-astra:high
@@ -138,11 +139,13 @@ The `scripts/` tooling (`watch-pr`, `orch`) is included unchanged, apart from a 
 
 ## Changes in this fork
 
-Relative to [mix64/pstack-claude-code@cbb2b75](https://github.com/mix64/pstack-claude-code/tree/cbb2b75), plus mix64's update to upstream 0.15.9 ([f51e899](https://github.com/mix64/pstack-claude-code/commit/f51e899)):
+Relative to mix64's port at `cbb2b75`, plus its update to upstream 0.15.9 (`f51e899`):
 
 - **Claude Code conformance.**
   - **poteto-mode stays on.** A `UserPromptSubmit` hook in its frontmatter repeats upstream's `reminder` on every prompt, as Cursor's `mode: true` did. Its routing sections now come first, because after compaction Claude Code keeps only the first 5,000 tokens of an invoked skill.
   - **Cursor runtime terms mapped.** `references/claude-code.md` holds the map. The agent store is `${CLAUDE_PLUGIN_DATA}/store`. Audit ticks run on the `loop` skill. Swarm, orchestrate, and the autopilots stay under Claude Code's cap of 20 running subagents. A todo list falls back to a file on models without todo tools.
+  - **Effort picked per job.** Upstream picks each subagent's reasoning level and speed before the spawn. Here `pstack-role --effort <level>` runs a role's Claude seats at that level on the shipped `<agent>-<effort>` copies and keeps their models. External seats keep their configured effort, and nothing sets fast mode per subagent, since Claude Code has none.
+  - **Help and catch-up skills mapped.** `poteto-help` gives Claude Code's install commands, `/pstack:` commands, and this repository's links, and points at upstream's guide as Cursor material. `ketchup`'s `/visualize` maps to the session's picture tools, or a Mermaid block and file links in a terminal.
   - **Transcripts found the Claude Code way.** poteto-mode names the session ID and transcript. `reflect` matches the first `user` line, and its reviewers look for `Bash` calls, not Cursor's `Shell`.
   - **External seats stop in time.** `pstack-seat` stops the CLI 30 seconds before the Bash timeout. Before, Claude Code moved the timed-out command to the background, the bridge reported `FAILED`, and the CLI kept running on your subscription. The bridges also cap their turns and skip CLAUDE.md.
   - **One role resolver.** `bin/pstack-role` applies the value grammar that seven skills used to restate. `--panel` keeps a disabled alias from being refilled in a panel.
