@@ -43,7 +43,7 @@ Up to 0.15.25-claude.1 this plugin installed as `pstack@pstack-claude-code`, and
 /pstack-code:interrogate review this pr.
 ```
 
-Every skill except `setup-pstack` and `typescript-best-practices` is user-invocable only (`disable-model-invocation: true`, as upstream). That keeps 51 skill descriptions out of every session's context. `typescript-best-practices` loads by itself when Claude works on `.ts` and `.tsx` files, through its `paths` field. `poteto-mode` reaches the other skills by reading `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md` directly.
+Every skill except `setup-pstack` and `typescript-best-practices` is user-invocable only (`disable-model-invocation: true`, as upstream). That keeps 58 skill descriptions out of every session's context. `typescript-best-practices` loads by itself when Claude works on `.ts` and `.tsx` files, through its `paths` field. `poteto-mode` reaches the other skills by reading `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md` directly.
 
 ## What changed from the Cursor version
 
@@ -62,7 +62,7 @@ Every skill except `setup-pstack` and `typescript-best-practices` is user-invoca
 | A Custom Mode, or the older `mode: true` with `reminder` | A `UserPromptSubmit` hook in `poteto-mode`'s frontmatter that repeats the reminder on every prompt after `/pstack-code:poteto-mode` |
 | The agent store, named in the system prompt | `${CLAUDE_PLUGIN_DATA}/store`, named in `poteto-mode` |
 | Todo list | `TaskCreate` and `TaskUpdate`, or `TodoWrite`, when the session has them, otherwise a file |
-| `cursor-team-kit` (`deslop`, `control-ui`, `control-cli`) | `deslop` copied into `~/.claude/skills/` (falls back to the built-in `simplify` skill), built-in browser tools, Bash, `run` skill |
+| `cursor-team-kit` (`deslop`, `control-ui`, `control-cli`) | pstack's own copy of `deslop` and six more Team Kit skills (see [Cursor Team Kit skills](#cursor-team-kit-skills)), built-in browser tools, Bash, `run` skill |
 | `create-skill` (Cursor built-in) | `skill-creator` skill |
 
 [`skills/poteto-mode/references/claude-code.md`](pstack/skills/poteto-mode/references/claude-code.md) maps every Cursor term still left in the playbooks.
@@ -149,6 +149,20 @@ Without the timeout change, keep panel effort at `high` or below.
 
 External seats send code and diffs to that provider. `reflect` sends the session transcript. Free and stealth OpenRouter models may log prompts, and the OpenRouter bridge skips `.env`, key, and credential files, plus anything git ignores. Keep panels Claude-only for code you cannot share.
 
+## Cursor Team Kit skills
+
+pstack ships seven skills from Cursor's [`cursor-team-kit`](https://github.com/cursor/plugins/tree/99743e9c151c8537cbbf1f98bb38f34ef3368453/cursor-team-kit), taken at the commit this port tracks, MIT licensed. Only their frontmatter changes: each is opt-in (`disable-model-invocation: true`), so it costs no context until you type it, and shows an argument hint where it takes one.
+
+| Skill | Use it to |
+|---|---|
+| `/pstack-code:deslop` | Strip AI slop from the branch's code. poteto-mode runs it before every commit. |
+| `/pstack-code:thermo-nuclear-code-quality-review` | Get an extremely strict maintainability review of a branch. |
+| `/pstack-code:make-pr-easy-to-review` | Tidy a PR's history and description without changing its behavior. |
+| `/pstack-code:fix-ci` | Take a PR's failing checks to green, one failure at a time. |
+| `/pstack-code:fix-merge-conflicts` | Resolve merge conflicts and get back to a tree that builds. |
+| `/pstack-code:get-pr-comments` | Summarize the review comments on the current PR. |
+| `/pstack-code:what-did-i-get-done` | Summarize your own commits over a time period. |
+
 ## Not ported
 
 - `make-bot-ui`. It targets Cursor Automations webhooks.
@@ -170,7 +184,7 @@ What this port adds beyond the term mappings above:
   - **One role resolver.** `bin/pstack-role` applies the value grammar that seven skills used to restate. `--panel` keeps a disabled alias from being refilled in a panel.
   - **Review seats enforced.** A `PreToolUse` hook blocks Bash and Monitor commands that write files or change the repository in `pstack-code:reviewer` and its fixed-effort copies.
   - **Plugin paths from Claude Code.** `pstack-code:poteto-agent`, its fixed-effort copies, and the bridges get `${CLAUDE_PLUGIN_ROOT}` from their own definitions instead of searching the plugin cache.
-  - **Smaller fixes.** `typescript-best-practices` loads for `.ts` files again, since its `paths` did nothing next to `disable-model-invocation`. `bun.lock` names the renamed package. `setup-pstack` offers at most four AskUserQuestion options and the todo-tools setting. Skills show argument hints. Autopilot slop-strips use `deslop` first. The `how` prompts no longer assume Glob and Grep tools. The marketplace names its owner and describes itself.
+  - **Smaller fixes.** `typescript-best-practices` loads for `.ts` files again, since its `paths` did nothing next to `disable-model-invocation`. `bun.lock` names the renamed package. `setup-pstack` offers at most four AskUserQuestion options and the todo-tools setting. Skills show argument hints. Autopilot slop-strips use `deslop`. The `how` prompts no longer assume Glob and Grep tools. The marketplace names its owner and describes itself.
 - **Grok seats.** The `grok:<model>[:<effort>]` value and the `pstack-code:grok-bridge` agent.
 - **Bridges rebuilt.** Codex and Grok seats run through `bin/pstack-seat`. The parent writes the prompt file, the bridge returns the answer file's path, and effort can be set per seat.
   - Write seats find their worktree themselves. Before, a Codex write seat quietly fell back to review because the parent could not tell it the worktree path.
@@ -185,7 +199,8 @@ What this port adds beyond the term mappings above:
   - The playbook no longer suggests deleting `~/.claude/projects/` session logs, which `recall` and session pickup read.
   - `worktree-audit.sh` finds sessions filed under a worktree's own path.
   - It falls back to `grep` when `rg` isn't installed. Before, it silently found no chats and could mark a live worktree safe to delete.
-- **Real `/deslop` before commit.** pstack runs Cursor's `deslop` skill when it is installed as a user skill, and only falls back to `simplify` without it. `simplify` targets reuse and efficiency, not AI slop.
+- **Real `/deslop` before commit.** pstack ships Cursor's `deslop` skill and runs it before commit, instead of the built-in `simplify` skill, which targets reuse and efficiency, not AI slop. Earlier versions needed a copy in `~/.claude/skills/`.
+- **Seven Cursor Team Kit skills ship with the plugin**, as open-pstack does, opt-in like the rest. See [Cursor Team Kit skills](#cursor-team-kit-skills).
 - **Claude effort per role.** The `<model>:<effort>` value and the fixed-effort agents that ship with the plugin.
 - **Bounded agent context.** Every call re-reads an agent's whole context, so long-lived agents cost the most. In one measured overnight autopilot run, 9 resumed owners and the root were 56% of the token cost, and 428 short-lived lanes were 42%.
   - Agents end after their task and hand long work to a fresh agent through a file.
@@ -219,4 +234,4 @@ To release, bump `version` in `pstack/.claude-plugin/plugin.json`, then run `cla
 
 ## License
 
-MIT. The original work is Copyright (c) 2026 Lauren Tan, see [LICENSE](LICENSE). This port keeps that notice and is distributed under the same license. It is not affiliated with or endorsed by Cursor or Anysphere.
+MIT. The original work is Copyright (c) 2026 Lauren Tan, see [LICENSE](LICENSE). The seven Cursor Team Kit skills are Copyright (c) 2026 Cursor, see [pstack/LICENSE-cursor-team-kit](pstack/LICENSE-cursor-team-kit). This port keeps both notices and is distributed under the same license. It is not affiliated with or endorsed by Cursor or Anysphere.

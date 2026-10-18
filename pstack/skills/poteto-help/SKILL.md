@@ -87,6 +87,13 @@ The default answer is `/pstack-code:poteto-mode`, which runs most of the others 
 | Turn their own working habits into a personal mode skill | [`/pstack-code:automate-me`](../automate-me/SKILL.md) |
 | Turn what a finished task taught into skill edits | [`/pstack-code:reflect`](../reflect/SKILL.md) |
 | Stop agents from repeating the same mistakes in this repo | [`/pstack-code:correct`](../correct/SKILL.md) |
+| Strip AI slop out of the branch's code before commit | [`/pstack-code:deslop`](../deslop/SKILL.md) |
+| Get an extremely strict maintainability review of a branch | [`/pstack-code:thermo-nuclear-code-quality-review`](../thermo-nuclear-code-quality-review/SKILL.md) |
+| Make a PR easy to review without changing its behavior | [`/pstack-code:make-pr-easy-to-review`](../make-pr-easy-to-review/SKILL.md) |
+| Get a PR's failing checks to green | [`/pstack-code:fix-ci`](../fix-ci/SKILL.md) |
+| Resolve merge conflicts and get back to a building tree | [`/pstack-code:fix-merge-conflicts`](../fix-merge-conflicts/SKILL.md) |
+| Summarize the review comments on the current PR | [`/pstack-code:get-pr-comments`](../get-pr-comments/SKILL.md) |
+| Summarize their own commits over a time period | [`/pstack-code:what-did-i-get-done`](../what-did-i-get-done/SKILL.md) |
 | Find their way around pstack | `/pstack-code:poteto-help` |
 
 If a skill directory next to this one is missing from the table, read its frontmatter and route by its description. The `principle-*` directories are covered under principles below.
@@ -102,7 +109,7 @@ Close calls:
 
 Not in pstack:
 
-- `/deslop` ships in Cursor's `cursor-team-kit` plugin. Copy it to `~/.claude/skills/deslop/` to use it here, or pstack falls back to the built-in `simplify` skill. The built-in browser tools and Bash stand in for that plugin's `control-ui` and `control-cli`.
+- Cursor's `cursor-team-kit` plugin. pstack ships seven of its skills, the last seven rows of the table above. The built-in browser tools and Bash stand in for its `control-ui` and `control-cli`.
 - `/loop` is a Claude Code built-in, and the `skill-creator` skill stands in for Cursor's `/create-skill`.
 - pstack has no `/orchestrate` skill. Orchestrate is a `/pstack-code:poteto-mode` playbook. If the slash menu shows `/orchestrate`, another plugin provides it.
 
