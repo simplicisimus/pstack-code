@@ -128,7 +128,7 @@ d=$(new_prompt)
 start=$(date +%s)
 out=$(FAKE_MODE=hang "$seat" --cli codex --model m1 --mode review --repo "$tmp/repo" --prompt "$d/prompt.md" --deadline 2)
 took=$(($(date +%s) - start))
-contains "a hung codex stops at the deadline" "codex-bridge: FAILED deadline=2s" "$out"
+contains "a hung codex stops at the deadline" "codex-bridge: FAILED deadline=2s: codex was stopped at its --deadline." "$out"
 check "the deadline returns promptly" "yes" "$([ "$took" -le 8 ] && echo yes || echo "no, ${took}s")"
 check "a stopped seat's receipt says deadline" "deadline" "$(field "$d/receipt.json" status)"
 sleep 1
@@ -136,7 +136,7 @@ check "the CLI's whole process group is gone" "0" "$(pgrep -f "$marker-grandchil
 
 d=$(new_prompt)
 out=$(FAKE_MODE=hang BASH_MAX_TIMEOUT_MS=4000 "$seat" --cli grok --model g1 --mode review --repo "$tmp/repo" --prompt "$d/prompt.md")
-contains "the default deadline follows BASH_MAX_TIMEOUT_MS, grok included" "grok-bridge: FAILED deadline=2s" "$out"
+contains "the default deadline follows BASH_MAX_TIMEOUT_MS, grok included" "grok-bridge: FAILED deadline=2s: grok was stopped before the Bash timeout." "$out"
 sleep 1
 check "grok's process group is gone too" "0" "$(pgrep -f "$marker-grandchild" | wc -l | tr -d ' ')"
 

@@ -54,7 +54,9 @@ case "$mode" in review | write) ;; *) fail "--mode must be review or write" ;; e
 [ -d "$repo" ] || fail "repository not found: $repo"
 command -v "$cli" >/dev/null 2>&1 || fail "$cli is not on PATH"
 
+stopped="was stopped at its --deadline. The receipt and log show how far it got"
 if [ -z "$deadline" ]; then
+	stopped="was stopped before the Bash timeout. Raise BASH_MAX_TIMEOUT_MS or lower the effort"
 	bash_limit_ms=${BASH_MAX_TIMEOUT_MS:-600000}
 	case "$bash_limit_ms" in '' | *[!0-9]*) bash_limit_ms=600000 ;; esac
 	deadline=$((bash_limit_ms / 1000 - 30))
@@ -206,7 +208,7 @@ if [ -z "$status" ]; then
 fi
 tail_fields="${reported:+ reported_model=$reported}${receipt:+ receipt=$receipt}"
 if [ "$status" = "deadline" ]; then
-	fail "deadline=${deadline}s: $cli was stopped before the Bash timeout. Raise BASH_MAX_TIMEOUT_MS or lower the effort. Log: $log$tail_fields"
+	fail "deadline=${deadline}s: $cli $stopped. Log: $log$tail_fields"
 fi
 if [ "$status" = "failed" ]; then
 	[ -n "$error" ] || error=$(tail -n 3 "$log" 2>/dev/null | tr '\n' ' ' | cut -c1-300 | sed 's/ *$//')
