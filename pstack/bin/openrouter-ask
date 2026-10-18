@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Send one prompt to an OpenRouter model and print the reply.
-//   openrouter-ask --model <id> [--prompt-file <path>] [--max-tokens N]   (prompt on stdin otherwise)
+//   openrouter-ask --model <id> [--prompt-file <path>] [--max-tokens N] [--receipt <path>]   (prompt on stdin otherwise)
 //   openrouter-ask --list-free
-// Reads the key from OPENROUTER_API_KEY and never prints it.
-import { readFileSync } from "node:fs";
+// Reads the key from OPENROUTER_API_KEY and never prints it. --receipt writes the model that served the
+// request, its tokens, and the time, on failure too. OPENROUTER_BASE_URL points it at another endpoint.
+import { readFileSync, writeFileSync } from "node:fs";
 
-const API = "https://openrouter.ai/api/v1";
+const API = process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1";
 // Under the Bash tool's default 10-minute timeout, so the bridge never sees the command moved to the background.
 const TIMEOUT_MS = Number(process.env.OPENROUTER_TIMEOUT_MS) || 570_000;
 
@@ -16,6 +17,7 @@ function parseArgs(argv) {
     if (a === "--list-free") args.listFree = true;
     else if (a === "--model") args.model = value(argv, ++i, a);
     else if (a === "--prompt-file") args.promptFile = value(argv, ++i, a);
+    else if (a === "--receipt") args.receipt = value(argv, ++i, a);
     else if (a === "--max-tokens") {
       const n = Number(value(argv, ++i, a));
       if (!Number.isInteger(n) || n <= 0) fail("--max-tokens must be a positive integer");
@@ -31,9 +33,58 @@ function value(argv, i, flag) {
   return v;
 }
 
+let receipt = null;
+
 function fail(message, code = 2) {
+  if (receipt) writeReceipt({ status: "failed", exit: code, error: message });
   process.stderr.write(`openrouter-ask: ${message}\n`);
   process.exit(code);
+}
+
+// A router id such as openrouter/free picks the model itself. Other ids match the served model,
+// which drops a variant suffix such as :free.
+function modelCheck(requested, reported) {
+  if (!reported) return "not-reported";
+  if (requested.startsWith("openrouter/")) return "routed";
+  const base = requested.replace(/:[^/]*$/, "");
+  return reported === requested || reported === base || reported.startsWith(`${base}-`) ? "match" : "mismatch";
+}
+
+function writeReceipt({ status, exit, error = null, body = {}, bytes = 0 }) {
+  const usage = body.usage;
+  const count = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  const reported = typeof body.model === "string" ? body.model : null;
+  const fields = {
+    schema: 1,
+    cli: "openrouter",
+    model: receipt.model ?? null,
+    reported_model: reported,
+    model_check: modelCheck(receipt.model ?? "", reported),
+    effort: "default",
+    mode: "review",
+    status,
+    exit,
+    elapsed_s: Math.round((Date.now() - receipt.started) / 1000),
+    answer: null,
+    bytes,
+    usage: usage
+      ? {
+          input: count(usage.prompt_tokens),
+          cached_input: count(usage.prompt_tokens_details?.cached_tokens),
+          output: count(usage.completion_tokens),
+          reasoning: count(usage.completion_tokens_details?.reasoning_tokens),
+        }
+      : null,
+    cost_usd: count(usage?.cost),
+    session_id: typeof body.id === "string" ? body.id : null,
+    error,
+    notes: [],
+  };
+  try {
+    writeFileSync(receipt.path, `${JSON.stringify(fields, null, 2)}\n`, { mode: 0o600 });
+  } catch (err) {
+    process.stderr.write(`openrouter-ask: could not write the receipt: ${err.message}\n`);
+  }
 }
 
 async function listFree() {
@@ -77,11 +128,17 @@ async function ask({ model, promptFile, maxTokens }) {
   }
   const text = body.choices?.[0]?.message?.content;
   if (typeof text !== "string" || !text.trim()) fail("empty completion", 1);
-  process.stdout.write(text.endsWith("\n") ? text : `${text}\n`);
-  process.stderr.write(`openrouter-ask: model=${body.model ?? model} tokens=${body.usage?.total_tokens ?? "?"}\n`);
+  const answer = text.endsWith("\n") ? text : `${text}\n`;
+  process.stdout.write(answer);
+  if (receipt) writeReceipt({ status: "complete", exit: 0, body, bytes: Buffer.byteLength(answer) });
+  const check = modelCheck(model, body.model);
+  process.stderr.write(
+    `openrouter-ask: model=${body.model ?? model} model_check=${check} tokens=${body.usage?.total_tokens ?? "?"}\n`
+  );
 }
 
 const args = parseArgs(process.argv.slice(2));
+if (args.receipt && !args.listFree) receipt = { path: args.receipt, model: args.model, started: Date.now() };
 try {
   await (args.listFree ? listFree() : ask(args));
 } catch (err) {
