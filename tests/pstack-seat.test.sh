@@ -113,7 +113,7 @@ check "codex receipt keeps the requested model" "m1" "$(field "$d/receipt.json" 
 check "codex receipt has the usage" '{"input":100,"cached_input":40,"output":7,"reasoning":3}' "$(field "$d/receipt.json" usage)"
 check "codex receipt has the thread" "t-1" "$(field "$d/receipt.json" session_id)"
 check "a recovered codex error does not fail the seat" "null" "$(field "$d/receipt.json" error)"
-check "the receipt is private" "600" "$(stat -f %Lp "$d/receipt.json" 2>/dev/null || stat -c %a "$d/receipt.json")"
+check "the receipt is private" "600" "$(node -e 'console.log((require("fs").statSync(process.argv[1]).mode & 0o777).toString(8))' "$d/receipt.json")"
 
 d=$(new_prompt)
 out=$(FAKE_MODE=fail "$seat" --cli codex --model m1 --mode review --repo "$tmp/repo" --prompt "$d/prompt.md")
