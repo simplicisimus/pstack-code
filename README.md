@@ -220,6 +220,7 @@ The tests need bash and node. CI runs them on Linux and macOS, with `claude plug
 ```
 tests/pstack-role.test.sh
 tests/pstack-seat.test.sh
+tests/openrouter-ask.test.sh
 tests/review-seat-guard.test.sh
 tools/gen-effort-agents --check
 ```

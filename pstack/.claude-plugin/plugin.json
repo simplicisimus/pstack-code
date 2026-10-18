@@ -1,6 +1,6 @@
 {
   "name": "pstack-code",
-  "version": "0.15.25-claude.2",
+  "version": "0.15.25-claude.3",
   "description": "if you want to go fast, go deep first. poteto's rigorous agent workflows (poteto-mode, playbooks, principles, arena/swarm/interrogate) ported from Cursor to Claude Code, with Codex and Grok panel seats.",
   "author": {
     "name": "Lauren Tan (original pstack); Claude Code port by simplicisimus"
