@@ -90,6 +90,8 @@ interrogate reviewers: opus, @gpt, @grok
 
 Upstream itself now defaults its panels to Claude and Grok. Leave an alias empty (`@grok:`) to drop its seats. A failed or timed-out external seat reruns on the skill's default model, and the reply says so.
 
+Before it saves, setup runs each external model you chose once with a one-line prompt, and asks again about any that cannot run or that the provider serves under another model. It does not probe Claude models.
+
 ### How a bridge seat runs
 
 The parent writes the whole prompt to a private file. Codex and Grok seats run through [`bin/pstack-seat`](pstack/bin/pstack-seat), which writes the answer next to the prompt and prints one status line. The parent reads the answer file itself, so no relay model retypes the prompt or the answer.
@@ -174,6 +176,7 @@ What this port adds beyond the term mappings above:
   - Write seats find their worktree themselves. Before, a Codex write seat quietly fell back to review because the parent could not tell it the worktree path.
   - Codex ignores your Codex user config, so its MCP servers and hooks can't get around its sandbox.
 - **Seats run from the parent, with receipts.** As in [open-pstack](https://github.com/ericlitman/open-pstack), Codex and Grok review seats started from the main conversation run `pstack-seat` as a background task, with no bridge agent in between, and every external seat writes a receipt of the model that served it.
+- **Setup tries each external model before it saves.** Also from open-pstack: a model you cannot run, because of a login, a plan, or a typo, shows up at setup instead of as a failed seat in the first panel.
 - **Real read-only seats.** The `pstack-code:reviewer` agent replaces "tell it not to edit files" in `interrogate`, `how`, `why`, `reflect`, the arena cross-judge, and read-only swarm workers.
 - **The plan checker accepts the port's own plan skeleton.** `check-plan.mjs` still required `git show origin/main:`, which the port had replaced with reads from disk.
 - **Comment Sicko has its tools again.** The port had limited it to read-only tools, but its job is deleting comments and running `/how` and `/why`.
