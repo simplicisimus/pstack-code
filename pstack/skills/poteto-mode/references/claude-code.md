@@ -18,7 +18,7 @@ The playbooks were written for Cursor. Each row maps a Cursor term to what Claud
 | `control-ui` (browser, Electron, web) | The built-in browser tools (`mcp__Claude_Browser__*`), or Claude in Chrome when the user asks for it. The `run` skill launches the app. |
 | `control-cli` (CLIs, TUIs) | Bash, and the `run` skill for launching. |
 | `/visualize`, a screenshot or video embedded in a reply | The session's own tools for showing a picture, when it has them, such as the desktop app's widget and file-sending tools. Otherwise a Mermaid code block for a diagram and a path or link for each screenshot or video, since a terminal shows neither inline. |
-| `/deslop` from `cursor-team-kit` | The `deslop` skill when installed (copy `cursor-team-kit/skills/deslop/SKILL.md` to `~/.claude/skills/deslop/`). Otherwise the built-in `simplify` skill over the diff. |
+| `/deslop` from `cursor-team-kit` | pstack's own copy at `<pstack>/skills/deslop/SKILL.md`, applied to the diff. pstack also ships `cursor-team-kit`'s `thermo-nuclear-code-quality-review`, `make-pr-easy-to-review`, `fix-ci`, `fix-merge-conflicts`, `get-pr-comments`, and `what-did-i-get-done`. |
 | `create-skill` (Cursor built-in) | The `skill-creator` skill when available. Otherwise the **Authoring a skill** playbook alone. |
 | Bugbot | Whatever PR reviewers the repo has. |
 | The repo's `AGENTS.md` files and rules | Its `CLAUDE.md` and `AGENTS.md` files and `.claude/rules/`. |

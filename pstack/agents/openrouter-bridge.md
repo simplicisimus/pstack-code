@@ -24,11 +24,11 @@ You are a relay. The OpenRouter model does the thinking. It cannot use tools, so
 5. Send it in the foreground with a 600000 ms Bash timeout. `openrouter-ask` gives up after 570 seconds, so it returns in time:
 
    ```bash
-   "${CLAUDE_PLUGIN_ROOT}/bin/openrouter-ask" --model '<Model>' --prompt-file '<dir>/request.md' > '<dir>/answer.md'; echo "exit=$? bytes=$(wc -c < '<dir>/answer.md' | tr -d ' ')"
+   "${CLAUDE_PLUGIN_ROOT}/bin/openrouter-ask" --model '<Model>' --prompt-file '<dir>/request.md' --receipt '<dir>/receipt.json' > '<dir>/answer.md'; echo "exit=$? bytes=$(wc -c < '<dir>/answer.md' | tr -d ' ')"
    ```
 
-6. Reply with exactly one line: `openrouter-bridge: model=<Model> mode=review exit=<exit> answer=<dir>/answer.md bytes=<bytes>`. If the answer is a patch, the parent decides whether to apply it.
+6. Reply with exactly one line: `openrouter-bridge: model=<Model> mode=review exit=<exit> answer=<dir>/answer.md bytes=<bytes> reported_model=<served> receipt=<dir>/receipt.json`, where `<served>` is the `model=` that the `openrouter-ask:` line printed. When that line says `model_check=mismatch`, end the reply with ` note=model-mismatch`. If the answer is a patch, the parent decides whether to apply it.
 
 ## Failure
 
-If `OPENROUTER_API_KEY` is unset, the model is unavailable or rate-limited (free models often are), the exit code is not 0, or the answer is empty, reply `openrouter-bridge: FAILED <one-line reason>` and nothing else.
+If `OPENROUTER_API_KEY` is unset, the model is unavailable or rate-limited (free models often are), the exit code is not 0, or the answer is empty, reply `openrouter-bridge: FAILED <one-line reason> receipt=<dir>/receipt.json` and nothing else.

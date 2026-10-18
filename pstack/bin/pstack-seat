@@ -13,6 +13,9 @@
 # BASH_MAX_TIMEOUT_MS, else 10 minutes, the timeout the bridge agents pass to the Bash tool. Claude Code
 # moves a command that outlives its timeout to the background and keeps it running, so a seat must end first.
 # --deadline 0 turns the limit off, for a seat the parent runs as a background task.
+#
+# With node on PATH, the seat also writes receipt.json next to the prompt: the model the CLI reports
+# it ran (Grok does, Codex does not), tokens, cost when reported, and time. Without node it runs as before.
 set -u
 
 cli="" model="" effort="" mode="review" repo="" prompt="" deadline=""
@@ -51,7 +54,9 @@ case "$mode" in review | write) ;; *) fail "--mode must be review or write" ;; e
 [ -d "$repo" ] || fail "repository not found: $repo"
 command -v "$cli" >/dev/null 2>&1 || fail "$cli is not on PATH"
 
+stopped="was stopped at its --deadline. The receipt and log show how far it got"
 if [ -z "$deadline" ]; then
+	stopped="was stopped before the Bash timeout. Raise BASH_MAX_TIMEOUT_MS or lower the effort"
 	bash_limit_ms=${BASH_MAX_TIMEOUT_MS:-600000}
 	case "$bash_limit_ms" in '' | *[!0-9]*) bash_limit_ms=600000 ;; esac
 	deadline=$((bash_limit_ms / 1000 - 30))
@@ -64,7 +69,13 @@ dir=$(cd "$(dirname "$prompt")" && pwd)
 answer="$dir/answer.md"
 log="$dir/$cli.log"
 deadline_hit="$dir/deadline-hit"
-rm -f "$answer" "$deadline_hit"
+receipt=""
+events=""
+if command -v node >/dev/null 2>&1; then
+	receipt="$dir/receipt.json"
+	events="$dir/$cli.jsonl"
+fi
+rm -f "$answer" "$deadline_hit" "$dir/receipt.json"
 
 # Runs "$@" in its own process group and stops the whole group at the deadline.
 run_bounded() {
@@ -110,6 +121,7 @@ if [ "$mode" = "write" ]; then
 fi
 
 rc=0
+started=$(date +%s)
 case "$cli" in
 codex)
 	# --ignore-user-config drops the user's MCP servers, hooks, and notify program, which
@@ -123,7 +135,11 @@ codex)
 	set -- exec --ignore-user-config -m "$model" -s "$sandbox" --skip-git-repo-check \
 		--ephemeral --color never -C "$wd" -o "$answer"
 	[ -n "$effort" ] && set -- "$@" -c "model_reasoning_effort=$effort"
-	run_bounded codex "$@" - <"$prompt" >"$log" 2>&1 || rc=$?
+	if [ -n "$events" ]; then
+		run_bounded codex "$@" --json - <"$prompt" >"$events" 2>"$log" || rc=$?
+	else
+		run_bounded codex "$@" - <"$prompt" >"$log" 2>&1 || rc=$?
+	fi
 	;;
 grok)
 	# Grok's read-only and strict sandboxes can refuse to start (for example when
@@ -150,22 +166,56 @@ grok)
 		run_prompt=$prompt
 	fi
 	set -- --prompt-file "$run_prompt" -m "$model" --cwd "$wd" --sandbox workspace \
-		--always-approve --disallowed-tools "$deny" --output-format plain
+		--always-approve --disallowed-tools "$deny"
 	[ -n "$effort" ] && set -- "$@" --reasoning-effort "$effort"
-	(cd "$wd" && run_bounded grok "$@") >"$answer" 2>"$log" || rc=$?
+	if [ -n "$events" ]; then
+		# The answer is the text of the final result event, which seat-receipt.mjs writes to answer.md.
+		(cd "$wd" && run_bounded grok "$@" --output-format streaming-messages-json) >"$events" 2>"$log" || rc=$?
+	else
+		(cd "$wd" && run_bounded grok "$@" --output-format plain) >"$answer" 2>"$log" || rc=$?
+	fi
 	;;
 esac
+elapsed=$(($(date +%s) - started))
+
+status="" reported="" check="" error=""
+if [ -n "$receipt" ]; then
+	hit=0
+	[ -f "$deadline_hit" ] && hit=1
+	while IFS='=' read -r key value; do
+		case "$key" in
+		status) status=$value ;;
+		reported_model) reported=$value ;;
+		model_check) check=$value ;;
+		error) error=$value ;;
+		esac
+	done < <(node "$(dirname "$0")/../lib/seat-receipt.mjs" --cli "$cli" --events "$events" --answer "$answer" \
+		--receipt "$receipt" --model "$model" --effort "${effort:-default}" --mode "$mode" --exit "$rc" \
+		--elapsed "$elapsed" --deadline-hit "$hit" --note "$note" --log "$log")
+	[ -n "$status" ] || receipt=""
+	[ "$check" = "mismatch" ] && note="$note note=model-mismatch"
+fi
 
 bytes=0
 [ -f "$answer" ] && bytes=$(wc -c <"$answer" | tr -d ' ')
-if [ -f "$deadline_hit" ]; then
-	fail "deadline=${deadline}s: $cli was stopped before the Bash timeout. Raise BASH_MAX_TIMEOUT_MS or lower the effort. Log: $log"
+if [ -z "$status" ]; then
+	status=complete
+	if [ -f "$deadline_hit" ]; then
+		status=deadline
+	elif [ "$rc" -ne 0 ] || [ "$bytes" -eq 0 ]; then
+		status=failed
+	fi
 fi
-if [ "$rc" -ne 0 ] || [ "$bytes" -eq 0 ]; then
-	fail "exit=$rc bytes=$bytes: $(tail -n 3 "$log" 2>/dev/null | tr '\n' ' ' | cut -c1-300)"
+tail_fields="${reported:+ reported_model=$reported}${receipt:+ receipt=$receipt}"
+if [ "$status" = "deadline" ]; then
+	fail "deadline=${deadline}s: $cli $stopped. Log: $log$tail_fields"
+fi
+if [ "$status" = "failed" ]; then
+	[ -n "$error" ] || error=$(tail -n 3 "$log" 2>/dev/null | tr '\n' ' ' | cut -c1-300 | sed 's/ *$//')
+	fail "exit=$rc bytes=$bytes: $error$tail_fields"
 fi
 
-echo "$cli-bridge: model=$model effort=${effort:-default} mode=$mode exit=$rc answer=$answer bytes=$bytes$note"
+echo "$cli-bridge: model=$model effort=${effort:-default} mode=$mode exit=$rc answer=$answer bytes=$bytes$tail_fields$note"
 if [ "$mode" = "write" ]; then
 	git -C "$wd" status --short
 fi
